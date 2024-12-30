@@ -17,6 +17,10 @@
     var: conflicting_services
     verbosity: 1
 
+- name: Check if CoreDNS is already running
+  ansible.builtin.set_fact:
+    coredns_running: "{{ 'coredns' in conflicting_services }}"
+
 - name: Fail if unknown services are still using the port
   ansible.builtin.fail:
     msg:
@@ -26,6 +30,7 @@
   when:
     - conflicting_services | difference(['systemd-resolve', 'named', 'dnsmasq'])
       | length > 0
+    - not coredns_running
 
 - name: Resolve systemd-resolved port conflict
   when: "'systemd-resolve' in conflicting_services"
