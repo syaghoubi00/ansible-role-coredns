@@ -1,0 +1,10 @@
+{{ ansible_managed | comment }}
+
+.:{{ coredns_port }} {
+    forward . 8.8.8.8 1.1.1.1
+    cache 30
+    errors
+    health
+    log
+    reload
+}
