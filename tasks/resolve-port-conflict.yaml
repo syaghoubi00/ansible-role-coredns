@@ -1,0 +1,112 @@
+# TODO: Resolve other services that might have port conflict
+# TODO: Add condition if CoreDNS is listening for migrating from systemd setup to container / vice-versa
+---
+- name: Get the name of services running on the CoreDNS listening port
+  ansible.builtin.shell: |
+    ss -lptn sport = :{{ coredns_port }} |
+    grep -oP 'users:\(\("\K[^"]+' || true
+  register: listening_services
+  changed_when: false
+
+- name: Parse the service names from ss output
+  ansible.builtin.set_fact:
+    conflicting_services: "{{ listening_services.stdout_lines | unique }}"
+
+- name: Debug parsed services
+  ansible.builtin.debug:
+    var: conflicting_services
+    verbosity: 1
+
+- name: Fail if unknown services are still using the port
+  ansible.builtin.fail:
+    msg:
+      "Unknown services are using port {{ coredns_port }}: {{
+      conflicting_services | difference(['systemd-resolve', 'named', 'dnsmasq'])
+      }}"
+  when:
+    - conflicting_services | difference(['systemd-resolve', 'named', 'dnsmasq'])
+      | length > 0
+
+- name: Resolve systemd-resolved port conflict
+  when: "'systemd-resolve' in conflicting_services"
+  block:
+    - name: Ensure resolved.conf.d directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        mode: "0755"
+
+    - name: Create drop-in to disable systemd-resolve DNSStubListener
+      ansible.builtin.copy:
+        dest: /etc/systemd/resolved.conf.d/00-disable-dns-stub-listener.conf
+        content: |
+          [Resolve]
+          DNSStubListener=no
+        mode: "0644"
+
+    - name: Restart systemd-resolved
+      ansible.builtin.systemd_service:
+        name: systemd-resolved
+        state: restarted
+
+# NOTE: Needs testing
+# - name: Resolve bind port conflict
+#   when: "'named' in conflicting_services"
+#   ansible.builtin.service:
+#     name: named
+#     state: stopped
+#     enabled: false
+
+- name: Handle dnsmasq DNS conflict
+  when: "'dnsmasq' in conflicting_services"
+  block:
+    # FIX: Doesn't check drop-in files
+    - name: Check if dnsmasq is providing DHCP or TFTP
+      ansible.builtin.command:
+        grep -E "^(dhcp-range|enable-tftp)" /etc/dnsmasq.conf
+      register: dnsmasq_other_services
+      changed_when: false
+      failed_when: false
+
+    - name: Set fact for dnsmasq service state
+      ansible.builtin.set_fact:
+        dnsmasq_has_other_services: "{{ dnsmasq_other_services.rc == 0 }}"
+
+    - name: Debug dnsmasq service detection
+      ansible.builtin.debug:
+        msg:
+          - "dnsmasq configuration check result: {{
+            dnsmasq_other_services.stdout_lines }}"
+          - "Has other services: {{ dnsmasq_has_other_services }}"
+          - "Action: {{ 'Disable DNS only' if dnsmasq_has_other_services else
+            'Stop service completely' }}"
+        verbosity: 1
+
+    - name: If dnsmasq is providing other services just disable DNS
+      when: dnsmasq_has_other_services
+      block:
+        - name: Create dnsmasq drop-in configuration directory
+          ansible.builtin.file:
+            path: /etc/dnsmasq.d
+            state: directory
+            mode: "0755"
+
+        - name: Disable DNS functionality in dnsmasq
+          ansible.builtin.copy:
+            dest: /etc/dnsmasq.d/00-disable-dns.conf
+            content: |
+              port=0
+              bind-interfaces
+            mode: "0644"
+
+        - name: Restart dnsmasq
+          ansible.builtin.service:
+            name: dnsmasq
+            state: restarted
+
+    - name: Stop and disable dnsmasq if it is only doing DNS
+      ansible.builtin.service:
+        name: dnsmasq
+        state: stopped
+        enabled: false
+      when: not dnsmasq_has_other_services
