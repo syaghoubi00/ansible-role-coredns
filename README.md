@@ -14,17 +14,13 @@ None.
 `coredns_group: "coredns"` - The name of the CoreDNS group
 
 `coredns_install_method: binary` - How CoreDNS will be installed, `binary` or
-`container`
+`container` (container install not implemented yet)
 
 `coredns_port: 53` - What port CoreDNS will listen on
 
 `coredns_user: "coredns"` - The name of the CoreDNS user
 
 `coredns_version: null` - `undefined` will use `latest`
-
-### TODO
-
-Add variable to install in a container
 
 ## Dependencies
 
