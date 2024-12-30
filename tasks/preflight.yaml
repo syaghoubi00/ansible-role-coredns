@@ -1,0 +1,5 @@
+- name: Ensure necessary tools are installed
+  ansible.builtin.package:
+    name: tar
+    state: present
+  when: coredns_install_method == 'binary'

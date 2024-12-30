@@ -1,2 +1,5 @@
+- name: Role checks
+  ansible.builtin.include_tasks: preflight.yaml
+
 - name: Install CoreDNS
   ansible.builtin.include_tasks: "{{ coredns_install_method }}.install.yaml"
