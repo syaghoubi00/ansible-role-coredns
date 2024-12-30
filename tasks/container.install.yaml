@@ -1,0 +1,6 @@
+# TODO: Implement container install
+---
+- name: Fail if trying to install with container method
+  ansible.builtin.fail:
+    msg: "The container install method is not implemented yet"
+  when: coredns_install_method == 'container'
