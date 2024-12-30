@@ -9,15 +9,18 @@ None.
 
 ## Role Variables
 
-`coredns_auto_update: false` - don't automatically update to latest by default
+`coredns_auto_update: false` - Don't automatically update to `latest` by default
 
-`coredns_group: "coredns"` - name of coreDNS group
+`coredns_group: "coredns"` - The name of the CoreDNS group
 
-`coredns_port: 53` - port CoreDNS will listen on
+`coredns_install_method: binary` - How CoreDNS will be installed, `binary` or
+`container`
 
-`coredns_user: "coredns"` - name of CoreDNS user
+`coredns_port: 53` - What port CoreDNS will listen on
 
-`coredns_version: null` - undefined will use `latest`
+`coredns_user: "coredns"` - The name of the CoreDNS user
+
+`coredns_version: null` - `undefined` will use `latest`
 
 ### TODO
 
