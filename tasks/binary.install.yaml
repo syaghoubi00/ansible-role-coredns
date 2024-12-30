@@ -150,16 +150,6 @@
         src: "/tmp/coredns.tgz"
         dest: "/usr/local/bin/"
         remote_src: true
-
-    - name: Create basic Corefile
-      ansible.builtin.template:
-        src: Corefile.j2
-        dest: /etc/coredns/Corefile
-        owner: "{{ coredns_user }}"
-        group: "{{ coredns_group }}"
-        mode: "0644"
-        backup: true
-        # force: false # don't overwrite an existing config
   always:
     - name: Clean up files
       ansible.builtin.file:
@@ -168,6 +158,17 @@
       with_items:
         - /tmp/coredns.sha256
         - /tmp/coredns.tgz
+
+# TODO: Use a user supplied Corefile if provided
+- name: Create basic Corefile
+  ansible.builtin.template:
+    src: Corefile.j2
+    dest: /etc/coredns/Corefile
+    owner: "{{ coredns_user }}"
+    group: "{{ coredns_group }}"
+    mode: "0644"
+    backup: true
+    # force: false # don't overwrite an existing config
 
 - name: Install systemd service
   ansible.builtin.template:
