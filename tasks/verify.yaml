@@ -19,19 +19,42 @@
     - coredns_service is defined
     - coredns_install_method == 'binary'
 
+- name: Get CoreDNS health check port from Corefile
+  ansible.builtin.slurp:
+    src: /etc/coredns/Corefile
+  register: corefile_content
+  when: coredns_install_method == 'binary'
+
+- name: Extract health check port from Corefile
+  ansible.builtin.set_fact:
+    coredns_health_check_port:
+      "{{ (corefile_content.content | b64decode |
+      regex_findall('health\\s*:(\\d+)')) | select('string') | list |
+      default(['8080'], true) }}"
+
+- name: Output health check ports
+  ansible.builtin.debug:
+    msg: "Found health check ports: {{ coredns_health_check_port }}"
+    verbosity: 1
+
 - name: Get CoreDNS health status
   ansible.builtin.uri:
-    url: "http://localhost:{{ coredns_health_check_port }}/health"
+    url: "http://localhost:{{ item }}/health"
     method: GET
     return_content: false
   register: coredns_health
   when: coredns_health_check_enabled
   retries: 3
-  delay: 10 # Give time between retries to allow CoreDNS to reload
+  delay: 15 # Give time between retries to allow CoreDNS to reload
+  with_items: "{{ coredns_health_check_port }}"
 
 - name: Assert CoreDNS is healthy
   ansible.builtin.assert:
-    that: "coredns_health.status == 200"
-    success_msg: "CoreDNS is healthy"
-    fail_msg: "HTTP request failed with status: {{ coredns_health.status }}"
+    that: "item.status == 200"
+    success_msg:
+      "CoreDNS on port {{ item.url |
+      regex_replace('^http://localhost:(.+)/health$', '\\1') }} is healthy"
+    fail_msg:
+      "HTTP request to {{ item.url }} failed with status: {{ item.status }}"
   when: coredns_health_check_enabled
+  loop: "{{ coredns_health.results }}"

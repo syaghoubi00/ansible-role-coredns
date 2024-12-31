@@ -11,6 +11,10 @@ None.
 
 `coredns_auto_update: false` - Don't automatically update to `latest` by default
 
+`coredns_config:` - Use an inline configuration
+
+`coredns_corefile:` - Use a config from file
+
 `coredns_group: "coredns"` - The name of the CoreDNS group
 
 `coredns_health_check_enabled: true` - CoreDNS health check endpoint enabled
@@ -19,7 +23,7 @@ None.
 will listen on
 
 `coredns_install_method: binary` - How CoreDNS will be installed, `binary` or
-`container` (container install not implemented yet)
+`container` (_container install not implemented yet_)
 
 `coredns_port: 53` - What port CoreDNS will listen on
 

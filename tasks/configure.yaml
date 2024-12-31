@@ -1,0 +1,39 @@
+- name: Check for custom Corefile
+  delegate_to: localhost
+  become: false
+  ansible.builtin.stat:
+    # If path starts with '/', search absolute path,
+    # else, search relative to the dir the playbook was ran from
+    path:
+      "{{ (coredns_corefile if coredns_corefile.startswith('/') else
+      playbook_dir + '/' + coredns_corefile) }}"
+  register: custom_corefile
+  # when: coredns_corefile is defined and coredns_corefile | length > 0
+  when: coredns_corefile is defined
+
+- name: Copy user-supplied Corefile
+  ansible.builtin.copy:
+    content: "{{ coredns_config | default(omit) }}"
+    src: "{{ custom_corefile.stat.path | default(omit) }}"
+    dest: /etc/coredns/Corefile
+    owner: "{{ coredns_user }}"
+    group: "{{ coredns_group }}"
+    mode: "0644"
+    backup: true
+  when:
+    - coredns_config is defined or (custom_corefile.stat.exists and
+      custom_corefile.stat.readable)
+    - coredns_install_method == 'binary'
+
+- name: Use default Corefile template
+  ansible.builtin.template:
+    src: Corefile.j2
+    dest: /etc/coredns/Corefile
+    owner: "{{ coredns_user }}"
+    group: "{{ coredns_group }}"
+    mode: "0644"
+    backup: true
+  when:
+    - coredns_config is not defined
+    - not custom_corefile.stat.exists | default(false)
+    - coredns_install_method == 'binary'
