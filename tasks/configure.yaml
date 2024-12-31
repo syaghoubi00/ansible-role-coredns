@@ -1,29 +1,64 @@
-- name: Check for custom Corefile
+- name: Check if a custom Corefile if defined
   delegate_to: localhost
   become: false
   ansible.builtin.stat:
-    # If path starts with '/', search absolute path,
-    # else, search relative to the dir the playbook was ran from
     path:
       "{{ (coredns_corefile if coredns_corefile.startswith('/') else
       playbook_dir + '/' + coredns_corefile) }}"
-  register: custom_corefile
-  # when: coredns_corefile is defined and coredns_corefile | length > 0
+  register: corefile_stat
   when: coredns_corefile is defined
 
-- name: Copy user-supplied Corefile
+# TODO: Set a timeout and use default template if fails to get input
+# FIX: Not accepting user input when seconds is set
+- name: Prompt for configuration choice when both are defined
+  ansible.builtin.pause:
+    prompt: |
+      Both inline configuration (coredns_config) and Corefile path (coredns_corefile) are defined.
+      Please choose configuration source:
+        1. Use inline configuration (coredns_config)
+        2. Use Corefile from path ({{ corefile_stat.stat.path }})
+      Enter 1 or 2
+    # Enter 1 or 2 (timeout in 30 seconds will fallback to the default template)
+    # seconds: 30
+  register: config_choice
+  until: config_choice.user_input in ['1', '2']
+  delay: 1
+  ignore_errors: true
+  retries: 3
+  when:
+    - coredns_config is defined
+    - coredns_corefile is defined
+    - corefile_stat.stat.exists | default(false)
+
+- name: Set configuration source
+  ansible.builtin.set_fact:
+    use_inline_config:
+      "{{ true if (coredns_config is defined and coredns_corefile is not
+      defined) or (config_choice.user_input is defined and
+      config_choice.user_input == '1' and not config_choice.failed) else false
+      }}"
+    use_default_template:
+      "{{ coredns_config is not defined and coredns_corefile is not defined or
+      config_choice.failed | default(false) }}"
+
+# TODO: Register when file was changed to restart CoreDNS
+# otherwise the new config wont be automatically reloaded
+# if CoreDNS is missing reload config option
+- name: Copy CoreDNS configuration
   ansible.builtin.copy:
-    content: "{{ coredns_config | default(omit) }}"
-    src: "{{ custom_corefile.stat.path | default(omit) }}"
+    content: "{{ coredns_config if use_inline_config else omit }}"
+    src: "{{ corefile_stat.stat.path if not use_inline_config else omit }}"
     dest: /etc/coredns/Corefile
     owner: "{{ coredns_user }}"
     group: "{{ coredns_group }}"
     mode: "0644"
     backup: true
+  register: coredns_config_copy
   when:
-    - coredns_config is defined or (custom_corefile.stat.exists and
-      custom_corefile.stat.readable)
     - coredns_install_method == 'binary'
+    - not use_default_template
+    - use_inline_config or (corefile_stat.stat.exists | default(false) and
+      corefile_stat.stat.readable | default(false))
 
 - name: Use default Corefile template
   ansible.builtin.template:
@@ -34,6 +69,5 @@
     mode: "0644"
     backup: true
   when:
-    - coredns_config is not defined
-    - not custom_corefile.stat.exists | default(false)
+    - use_default_template
     - coredns_install_method == 'binary'
