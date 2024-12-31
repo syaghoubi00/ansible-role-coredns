@@ -1,0 +1,33 @@
+# TODO: do a dns lookup
+---
+- name: Get CoreDNS service status
+  ansible.builtin.systemd_service:
+    name: coredns
+  register: coredns_service
+  when: coredns_install_method == 'binary'
+
+- name: Assert CoreDNS service is active
+  ansible.builtin.assert:
+    that: coredns_service.status.ActiveState == 'active'
+    success_msg: "CoreDNS is running"
+    fail_msg: "The service: {{ coredns_service.name }} is not running!"
+  when:
+    - coredns_service is defined
+    - coredns_install_method == 'binary'
+
+- name: Get CoreDNS health status
+  ansible.builtin.uri:
+    url: "http://localhost:{{ coredns_health_check_port }}/health"
+    method: GET
+    return_content: false
+  register: coredns_health
+  when: coredns_health_check_enabled
+  retries: 3
+  delay: 10 # Give time between retries to allow CoreDNS to reload
+
+- name: Assert CoreDNS is healthy
+  ansible.builtin.assert:
+    that: "coredns_health.status == 200"
+    success_msg: "CoreDNS is healthy"
+    fail_msg: "HTTP request failed with status: {{ coredns_health.status }}"
+  when: coredns_health_check_enabled

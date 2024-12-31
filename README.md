@@ -13,6 +13,11 @@ None.
 
 `coredns_group: "coredns"` - The name of the CoreDNS group
 
+`coredns_health_check_enabled: true` - CoreDNS health check endpoint enabled
+
+`coredns_health_check_port: 8091` - Port that the CoreDNS health check endpoint
+will listen on
+
 `coredns_install_method: binary` - How CoreDNS will be installed, `binary` or
 `container` (container install not implemented yet)
 

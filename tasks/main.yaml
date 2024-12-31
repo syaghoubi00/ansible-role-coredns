@@ -3,3 +3,6 @@
 
 - name: Install CoreDNS
   ansible.builtin.include_tasks: "{{ coredns_install_method }}.install.yaml"
+
+- name: Verify CoreDNS is working
+  ansible.builtin.include_tasks: verify.yaml

@@ -185,6 +185,3 @@
     state: started
     enabled: true
     daemon_reload: true
-
-- name: Verify CoreDNS is working
-  ansible.builtin.include_tasks: verify.binary.install.yaml
