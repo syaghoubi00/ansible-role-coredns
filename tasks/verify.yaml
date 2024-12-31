@@ -1,4 +1,8 @@
-# TODO: do a dns lookup
+# TODO: Do a DNS lookup
+# Problems:
+# - Needs extra packages on the target machine to do the lookup
+# - Could use localhost and query the target, but
+# networking issues are a likely source of errors
 ---
 - name: Get CoreDNS service status
   ansible.builtin.systemd_service:
