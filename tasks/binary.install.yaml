@@ -86,7 +86,7 @@
       - "Target version: {{ coredns_version | default('using latest') }}"
       - "Needs update: {{ coredns_needs_update }}"
       - "Needs install: {{ coredns_needs_install }}"
-  when: ansible_verbosity > 1
+    verbosity: 1
 
 - name: Install/Update CoreDNS
   when: coredns_needs_install or coredns_needs_update
