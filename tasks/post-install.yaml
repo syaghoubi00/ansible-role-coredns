@@ -1,6 +1,9 @@
-# TODO: Implement better when conditions 
+# TODO: Implement better when conditions
 # - verify the firewall is in use, not just installed
 ---
+- name: Get list of packages
+  ansible.builtin.package_facts:
+
 - name: Open firewall port for CoreDNS - firewalld
   ansible.posix.firewalld:
     # service: dns
@@ -16,4 +19,3 @@
     proto: udp
     rule: allow
   when: "'ufw' in ansible_facts.packages"
-	
