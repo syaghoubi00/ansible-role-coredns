@@ -1,4 +1,5 @@
 coredns_auto_update: false # Don't automatically update to latest by default
+coredns_firewall_disable: true # Open the firewall on `coredns_port`
 coredns_group: coredns # Name of coreDNS group
 coredns_health_check_enabled: true # CoreDNS health check endpoint enabled
 coredns_health_check_port: 8091 # Port that the CoreDNS health check endpoint will listen on

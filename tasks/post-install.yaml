@@ -1,0 +1,19 @@
+# TODO: Implement better when conditions 
+# - verify the firewall is in use, not just installed
+---
+- name: Open firewall port for CoreDNS - firewalld
+  ansible.posix.firewalld:
+    # service: dns
+    port: "{{ coredns_port }}/udp"
+    state: enabled
+    immediate: true
+    permanent: true
+  when: "'firewalld' in ansible_facts.packages"
+
+- name: Open firewall port for CoreDNS - ufw
+  community.general.ufw:
+    port: "{{ coredns_port }}"
+    proto: udp
+    rule: allow
+  when: "'ufw' in ansible_facts.packages"
+	

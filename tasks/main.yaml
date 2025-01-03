@@ -6,3 +6,6 @@
 
 - name: Verify CoreDNS is working
   ansible.builtin.include_tasks: verify.yaml
+
+- name: Post install
+  ansible.builtin.include_tasks: post-install.yaml

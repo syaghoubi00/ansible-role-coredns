@@ -11,6 +11,8 @@ None.
 
 `coredns_auto_update: false` - Don't automatically update to `latest` by default
 
+`coredns_firewall_disable: true` - Open the firewall on `coredns_port`
+
 `coredns_config:` - Use an inline configuration
 
 `coredns_corefile:` - Use a config from file
@@ -33,7 +35,9 @@ will listen on
 
 ## Dependencies
 
-None.
+`ansible.posix.firewalld`: For opening the CoreDNS port with `firewalld`
+
+`community.general.ufw`: For opening the CoreDNS port with `ufw`
 
 ## Example Playbook
 
