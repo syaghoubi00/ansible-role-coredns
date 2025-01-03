@@ -1,6 +1,7 @@
-dependencies:
+collections:
   - ansible.posix
   - community.general
+dependencies: []
 galaxy_info:
   author: syaghoubi00
   description: Install CoreDNS
